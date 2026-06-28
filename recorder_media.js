@@ -84,7 +84,7 @@ btnToggleCam.addEventListener('click', async () => {
     
     if (camPlaceholderText) {
         camPlaceholderText.style.display = isCameraHardwareOn ? 'none' : 'flex';
-        camPlaceholderText.innerHTML = '📷 Camera Off<br><span>Audio is controlled separately</span>';
+        camPlaceholderText.innerHTML = '📷 Camera Off</span>';
     }
 
     if (localHardwareAVStream) {
