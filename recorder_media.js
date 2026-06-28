@@ -211,7 +211,7 @@ liveBadge.addEventListener('click', async () => {
 
         const downloadAnchor = document.createElement('a');
         downloadAnchor.href = URL.createObjectURL(compressedArchiveBlob);
-        downloadAnchor.download = `ShivLecture_${Date.now()}.board`;
+        downloadAnchor.download = `BoardRecording_${Date.now()}.board`;
         document.body.appendChild(downloadAnchor); downloadAnchor.click(); document.body.removeChild(downloadAnchor);
         setTimeout(() => URL.revokeObjectURL(downloadAnchor.href), 30000);
 
