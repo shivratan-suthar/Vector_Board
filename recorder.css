@@ -10,10 +10,21 @@
     --play-blue: #3b8bff;
 }
 
-body { margin: 0; padding: 0; background-color: var(--bg-main); color: var(--text-main); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+body { 
+    margin: 0; 
+    padding: 0; 
+    background-color: var(--bg-main); 
+    color: var(--text-main); 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    overflow: hidden; 
+    user-select: none; 
+}
 .hidden { display: none !important; }
 
-/* --- DASHBOARD ROUTE HEADER LINKS --- */
+/* --- HEADER BASE CONFIG --- */
 header { 
     height: 50px; 
     background: #111; 
@@ -23,10 +34,10 @@ header {
     align-items: center; 
     padding: 0 20px; 
     z-index: 100; 
-    position: relative; /* <-- ADD THIS LINE */
+    position: relative; 
+    flex-shrink: 0;
 }
 
-/* NEW RULE TO FORCE DEAD-CENTER */
 #classroomStateHeadingTitle {
     position: absolute;
     left: 50%;
@@ -36,8 +47,10 @@ header {
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: #dedede;
-    pointer-events: none; /* Prevents title from blocking mouse clicks */
-}.header-left { display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 500; }
+    pointer-events: none; 
+}
+
+.header-left { display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 500; }
 .live-badge { background: var(--live-red); color: white; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; cursor: pointer; display: flex; align-items: center; gap: 5px;}
 .live-badge.recording { animation: pulse 1.5s infinite; }
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
@@ -49,23 +62,44 @@ header {
 .end-class-btn { background: #3a1515; border-color: #8a2b2b; color: #ff8888; font-weight: bold; }
 .end-class-btn:hover { background: var(--live-red); color: white; border-color: white; }
 
-/* --- APP WORKSPACE CONTAINER --- */
-.app-body { display: flex; flex: 1; height: calc(100vh - 50px); position: relative; }
+/* --- LAYOUT WRAPPER --- */
+.app-body { 
+    display: flex; 
+    flex: 1; 
+    height: calc(100vh - 50px); 
+    position: relative;
+    flex-direction: row; 
+    overflow: hidden;
+}
+
+/* --- THE CENTRAL WORKSPACE GRID SYSTEM --- */
 .central-workspace { 
     flex: 1; 
-    display: flex; 
-    flex-direction: column; 
+    display: grid; 
+    grid-template-columns: 58px 1fr; 
+    grid-template-rows: 1fr 68px; 
+    grid-template-areas: 
+        "palette canvas"
+        "toolbar toolbar";
     position: relative; 
     background: var(--bg-workspace); 
     overflow: hidden; 
-    
-    /* ADDED: Reserves space for the toolbar so the canvas calculates a smaller height */
-    padding-bottom: 85px; 
     box-sizing: border-box; 
+    padding: 10px; 
 }
 
-/* --- MODERN ROUND PALETTE SELECTORS --- */
-.floating-palette { position: absolute; left: 15px; top: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 50; width: 36px; }
+/* --- PALETTE CONTAINER (LEFT) --- */
+.floating-palette { 
+    grid-area: palette;
+    position: relative; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    z-index: 50; 
+    width: 36px; 
+    justify-self: center;
+    align-self: center;
+}
 .palette-group { background: rgba(20,20,20,0.8); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 4px; display: flex; flex-direction: column; align-items: center; gap: 12px; backdrop-filter: blur(5px); }
 .color-dot { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; position: relative; display: flex; justify-content: center; align-items: center; }
 .color-dot.active { border-color: white; transform: scale(1.1); }
@@ -74,13 +108,34 @@ header {
 .thickness-btn.active { color: white; background: #444; }
 .thickness-dot { background: currentColor; border-radius: 50%; display: block; }
 
-.board-wrapper { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; width: 100%; height: 100%; }
-
-/* --- 16:9 CANVAS BORDER CONTAINER --- */
+/* --- CANVAS AREA CONTAINER --- */
+.board-wrapper { 
+    grid-area: canvas;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    position: relative; 
+    width: 100%; 
+    height: 100%; 
+    overflow: hidden;
+}
 .canvas-container { box-shadow: 0 10px 40px rgba(0,0,0,0.8); border: 1px solid var(--border-color); background-color: #1c1c1c; }
 
-/* --- ACTION TOOLBAR OVERLAYS --- */
-.bottom-toolbar { position: absolute; bottom: 15px; left: 20px; right: 20px; height: 56px; background: transparent; border-radius: 8px; padding: 4px 6px; display: flex; justify-content: space-between; align-items: center; z-index: 50; pointer-events: none; }
+/* --- ACTION TOOLBAR (BOTTOM) --- */
+.bottom-toolbar { 
+    grid-area: toolbar;
+    position: relative; 
+    height: 56px; 
+    background: transparent; 
+    border-radius: 8px; 
+    padding: 4px 6px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    z-index: 50; 
+    pointer-events: none; 
+    align-self: center;
+}
 .tb-group { background: var(--toolbar-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 4px 6px; display: flex; gap: 4px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .tb-btn { background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 50px; }
 .tb-btn:hover { color: white; background: #2f2f2f; }
@@ -89,7 +144,7 @@ header {
 .page-arrow { cursor: pointer; padding: 5px 10px; border-radius: 4px; background: #333; border: 1px solid #444; }
 .page-arrow:hover { background: #444; }
 
-/* --- POPUP DECK CONFIGURATIONS --- */
+/* --- POPUP SETTINGS --- */
 .more-popup { position: absolute; bottom: 80px; right: 20px; width: 260px; background: #1e1e1e; border: 1px solid #333; border-radius: 12px; padding: 12px; display: none; grid-template-columns: 1fr 1fr; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 100; pointer-events: auto;}
 .more-popup.open { display: grid; }
 .shapes-popup { position: absolute; bottom: 80px; left: 220px; background: #242424; border: 1px solid #444; border-radius: 8px; padding: 10px; display: none; grid-template-columns: 1fr 1fr; gap: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); pointer-events: auto; width: 220px;}
@@ -97,16 +152,43 @@ header {
 .shape-opt { padding: 8px; border-radius: 4px; cursor: pointer; font-size: 11px; background: #333; display: flex; align-items: center; gap: 6px; border: 1px solid transparent;}
 .shape-opt:hover { background: #444; border-color: var(--brand-accent); }
 
-/* --- SIDEBAR DECK PANEL --- */
-.sidebar { width: 320px; background: #181818; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; z-index: 80; }
-.cam-box { width: 100%; height: 210px; background: #0a0a0a; border-bottom: 1px solid var(--border-color); position: relative; display: flex; justify-content: center; align-items: center; }
+/* --- SIDEBAR PANEL (CAMERA & SLIDES) --- */
+.sidebar { 
+    width: 320px; 
+    background: #181818; 
+    border-left: 1px solid var(--border-color); 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 80; 
+    flex-shrink: 0;
+}
+.cam-box { width: 100%; height: 210px; background: #0a0a0a; border-bottom: 1px solid var(--border-color); position: relative; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
 .cam-box video { width: 100%; height: 100%; object-fit: cover; }
-.cam-box .hardware-error-notice { position: absolute; font-size: 11px; color: #ff6b6b; font-weight: 600; text-align: center; padding: 20px; pointer-events: none; }
+.cam-box .hardware-error-notice { position: absolute; font-size: 11px; color: #ff6b6b; font-weight: 600; text-align: center; padding: 20px; pointer-events: none; z-index: 10;}
 .cam-overlay-toggle { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; border: 1px solid #444; z-index: 15;}
-
 .mic-overlay-toggle { position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; border: 1px solid #444; z-index: 15; color: white; transition: color 0.2s; }
 .mic-overlay-toggle.is-muted { color: #ff4444; }
 .mic-overlay-toggle.is-muted::after { content: ''; position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background-color: #ff4444; transform: translateY(-50%) rotate(-20deg); border-radius: 2px; pointer-events: none; }
+
+/* NEW: Camera Standby Placeholder Styles */
+.cam-placeholder { 
+    position: absolute; 
+    text-align: center; 
+    color: #777; 
+    font-size: 12px; 
+    font-weight: 600; 
+    pointer-events: none; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 4px; 
+    z-index: 5; 
+}
+.cam-placeholder span { 
+    font-size: 9px; 
+    color: #555; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px; 
+}
 
 .file-manager { flex: 1; display: flex; flex-direction: column; padding: 15px; gap: 10px; overflow: hidden; }
 .file-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 4px; width: 100%; box-sizing: border-box; }
@@ -118,6 +200,103 @@ header {
 .file-card .slide-num-badge { background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px;}
 .file-card .del-hook { position: absolute; top: 6px; right: 6px; color: #fff; background: rgba(0,0,0,0.8); border: 1px solid #444; cursor: pointer; font-size: 11px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; }
 .file-card .del-hook:hover { background: var(--live-red); }
+
+/* --- CLEAN UP SIDEBAR HEADER & HIDE TEXT --- */
+.fm-header { display: flex; justify-content: flex-end; align-items: center; padding-bottom: 5px; }
+.fm-header span { display: none !important; }
+
+/* --- FORCE LANDSCAPE ORIENTATION OVERLAY (MOBILE ONLY) --- */
+.orientation-warning {
+    display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background-color: var(--bg-main); color: var(--text-main); z-index: 99999;
+    flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 30px; box-sizing: border-box;
+}
+.orientation-warning .rotate-icon { font-size: 60px; margin-bottom: 20px; animation: rotatePhoneAnim 2s infinite ease-in-out; }
+@keyframes rotatePhoneAnim { 0% { transform: rotate(0deg); } 50% { transform: rotate(-90deg); } 100% { transform: rotate(0deg); } }
+.orientation-warning h2 { font-size: 22px; color: var(--brand-accent); margin: 0 0 10px 0; letter-spacing: 1px; }
+.orientation-warning p { font-size: 14px; color: var(--text-muted); line-height: 1.5; max-width: 300px; }
+
+/* Find the media query at the bottom of recorder.css and update it to this: */
+@media (max-width: 860px) and (orientation: portrait) {
+    .orientation-warning:not(.hidden) { 
+        display: flex !important; 
+    }
+}
+
+/* Ensure .hidden always forces display: none */
+.hidden { 
+    display: none !important; 
+}
+
+/* ==========================================================================
+   DYNAMIC MOBILE & TABLET LAYOUT OVERRIDES (CRITICAL FOR PHONES)
+   ========================================================================= */
+@media (max-width: 1024px) {
+    header { height: 44px; padding: 0 8px; }
+    #classroomStateHeadingTitle { display: none !important; } 
+    .header-left { gap: 4px; font-size: 11px; }
+    .header-right { gap: 4px; font-size: 11px; }
+    .live-badge { font-size: 9px; padding: 4px; }
+    .hdr-btn { padding: 4px 6px; font-size: 9px; white-space: nowrap; }
+    .timer-display { font-size: 11px; margin: 0 2px; }
+
+    .app-body { height: calc(100vh - 44px); }
+
+    .central-workspace {
+        grid-template-columns: 44px 1fr; grid-template-rows: 1fr 52px; padding: 4px;
+    }
+    .floating-palette { width: 30px; gap: 6px; }
+    .palette-group { padding: 4px 2px; gap: 6px; }
+    .color-dot { width: 14px; height: 14px; }
+    .thickness-btn { width: 18px; height: 18px; }
+
+    .bottom-toolbar { height: 46px; }
+    .tb-btn { min-width: 32px; padding: 4px 6px; font-size: 13px; }
+    .tb-btn span { display: none !important; } 
+    .pager-group { gap: 4px; padding: 0 2px; font-size: 10px; }
+    .page-arrow { padding: 2px 4px; }
+    
+    .shapes-popup { bottom: 52px; left: 10px; width: 160px; }
+    .more-popup { bottom: 52px; right: 10px; width: 200px; }
+}
+
+@media (max-width: 1024px) and (orientation: landscape) {
+    .app-body { flex-direction: row !important; } 
+    .sidebar {
+        position: relative !important; width: 210px !important; height: 100% !important;
+        border-left: 1px solid var(--border-color); border-bottom: none !important; flex-direction: column !important;
+    }
+    .cam-box { 
+        width: 100% !important; height: 110px !important; border-right: none !important; border-bottom: 1px solid var(--border-color) !important;
+    }
+    .file-manager { padding: 6px !important; }
+    .file-list { 
+        flex-direction: column !important; overflow-y: auto !important; overflow-x: hidden !important; height: 100%; gap: 8px;
+    }
+    .file-card { width: 100% !important; height: auto !important; }
+}
+
+@media (max-width: 1024px) and (orientation: portrait) {
+    .app-body { flex-direction: column !important; } 
+    .sidebar {
+        position: relative !important; width: 100% !important; height: 120px !important; flex-direction: row !important; border-left: none !important; border-bottom: 1px solid var(--border-color);
+    }
+    .cam-box { 
+        width: 130px !important; height: 100% !important; border-bottom: none !important; border-right: 1px solid var(--border-color) !important;
+    }
+    .file-manager { padding: 4px !important; }
+    .file-list { 
+        flex-direction: row !important; overflow-x: auto !important; overflow-y: hidden !important; height: 100%; align-items: center; gap: 8px;
+    }
+    .file-card { width: 110px !important; height: 90% !important; }
+    .file-card .thumb-box { height: 55px !important; }
+
+    .central-workspace {
+        grid-template-columns: 1fr; grid-template-rows: 36px 1fr 52px; grid-template-areas: "palette" "canvas" "toolbar";
+    }
+    .floating-palette { flex-direction: row; width: 100%; height: 100%; justify-content: space-between; padding: 0 4px; }
+    .palette-group { flex-direction: row; width: auto; height: 24px; padding: 2px 8px; border-radius: 12px; gap: 8px; }
+}
 
 /* --- HUD OVERLAY --- */
 #shortcutHudOverlay {
@@ -134,20 +313,3 @@ header {
 .shortcut-grid kbd { background:#444; padding:3px 6px; border-radius:4px; box-shadow:0 2px 0 #222; }
 .shortcut-footer { margin-top: 20px; font-size: 11px; color: var(--text-muted); text-align: center; border-top: 1px solid #333; padding-top: 10px; }
 .shortcut-footer span { color:#fff; font-weight:bold; }
-
-.text-size-btn { 
-    width: 26px; 
-    height: 26px; 
-    border-radius: 6px; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    cursor: pointer; 
-    color: var(--text-muted); 
-    font-size: 11px; 
-    font-weight: bold; 
-    transition: 0.15s; 
-    font-family: monospace;
-}
-.text-size-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-.text-size-btn.active { color: white; background: #444; }

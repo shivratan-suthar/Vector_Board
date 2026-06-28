@@ -1,5 +1,5 @@
 /**
- * RECORDER_CANVAS.JS (Optimized 40 FPS Edition + Dynamic SVG Cursors)
+ * RECORDER_CANVAS.JS (Optimized 40 FPS Edition + Dynamic SVG Cursors + Clipboard Engine)
  */
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
@@ -14,6 +14,7 @@ window.activeWidth = 8;
 window.activeFontSize = 42; 
 window.activeTool = 'pen'; 
 window.activeShapeType = null;
+window.canvasClipboard = null; /* Global Clipboard */
 
 window.globalSlidesDeck = []; window.activeSlideIndex = 0; window.isWorkspaceLoading = false;
 window.isUserDrawingCurrently = false; window.currentDrawingObjectId = null; 
@@ -30,8 +31,8 @@ const syncWorkspaceBoardBoundsCalculations = () => {
     let newWidth = (containerRatio > targetRatio) ? parent.clientHeight * targetRatio : parent.clientWidth;
     let newHeight = (containerRatio > targetRatio) ? parent.clientHeight : parent.clientWidth / targetRatio;
     
-    const renderW = newWidth * 0.98;
-    const renderH = newHeight * 0.98;
+    const renderW = newWidth * 0.96;
+    const renderH = newHeight * 0.96;
     
     canvas.setWidth(renderW); 
     canvas.setHeight(renderH); 
@@ -43,7 +44,6 @@ window.addEventListener('resize', syncWorkspaceBoardBoundsCalculations);
 syncWorkspaceBoardBoundsCalculations();
 
 // --- HIGH CONTRAST DYNAMIC CURSOR ENGINE ---
-// --- HIGH CONTRAST DYNAMIC CURSOR ENGINE ---
 function updateCursor() {
     let cursorConfig = 'default';
     const hex = window.activeColor || '#ffffff';
@@ -54,37 +54,20 @@ function updateCursor() {
     const rawPen = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"><path d="M17 2 L22 7 L7 22 L0 24 L2 17 Z" fill="${hex}" stroke="black" stroke-width="1.5"/><path d="M16 6 L18 8" stroke="black" stroke-width="1.5"/><polygon points="0,24 4,20 0,20" fill="black"/></svg>`;
     const rawText = `<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"><path d="M5 4 L19 4 L19 6 L13 6 L13 18 L16 18 L16 20 L8 20 L8 18 L11 18 L11 6 L5 6 Z" fill="white" stroke="black" stroke-width="1.5"/></svg>`;
 
-    // Universal Base64 encoder (100% compatible across Chrome, Safari, Edge, Firefox)
     const toUrl = (svg) => `url(data:image/svg+xml;base64,${btoa(svg)})`;
 
     switch (activeTool) {
         case 'pen': 
-        case 'shape':
-            cursorConfig = `${toUrl(rawPen)} 0 24, crosshair`; 
-            break;
-        case 'highlight': 
-            cursorConfig = `${toUrl(rawHighlight)} 0 24, crosshair`; 
-            break;
-        case 'eraser': 
-            cursorConfig = `${toUrl(rawEraser)} 13 13, crosshair`; 
-            break;
-        case 'pointer': 
-            cursorConfig = `${toUrl(rawLaser)} 13 13, crosshair`; 
-            break;
-        case 'text': 
-            cursorConfig = `${toUrl(rawText)} 13 13, text`; 
-            break;
-        case 'select':
-            cursorConfig = 'default'; 
-            break;
+        case 'shape': cursorConfig = `${toUrl(rawPen)} 0 24, crosshair`; break;
+        case 'highlight': cursorConfig = `${toUrl(rawHighlight)} 0 24, crosshair`; break;
+        case 'eraser': cursorConfig = `${toUrl(rawEraser)} 13 13, crosshair`; break;
+        case 'pointer': cursorConfig = `${toUrl(rawLaser)} 13 13, crosshair`; break;
+        case 'text': cursorConfig = `${toUrl(rawText)} 13 13, text`; break;
+        case 'select': cursorConfig = 'default'; break;
     }
 
-    // Apply standard pointer
     canvas.defaultCursor = cursorConfig;
-    
-    // CRITICAL FIX: Attach directly to the canvas instance so drawing mode respects the shape
     canvas.freeDrawingCursor = cursorConfig; 
-    
     canvas.hoverCursor = (activeTool === 'select' || activeShapeType === 'select') ? 'move' : cursorConfig;
 }
 
@@ -100,15 +83,12 @@ window.updateBrush = function() {
     }
     updateCursor();
 }
-
-canvas.freeDrawingBrush.color = activeColor; canvas.freeDrawingBrush.width = activeWidth;
-updateBrush();
+canvas.freeDrawingBrush.color = activeColor; canvas.freeDrawingBrush.width = activeWidth; updateBrush();
 
 function logObjectTransform(e) {
     if (window.isRecording && e.target && e.target.id) {
         window.logActionDirectlyToTimeline('object-transform', {
-            targetId: e.target.id,
-            left: Math.round(e.target.left), top: Math.round(e.target.top),
+            targetId: e.target.id, left: Math.round(e.target.left), top: Math.round(e.target.top),
             scaleX: parseFloat(e.target.scaleX.toFixed(3)), scaleY: parseFloat(e.target.scaleY.toFixed(3)), angle: Math.round(e.target.angle)
         });
     }
@@ -154,50 +134,29 @@ function applyColorToSelection(chosenColor) {
     if (!activeObjects.length) return;
 
     activeObjects.forEach(obj => {
-        if (obj.type === 'i-text' || obj.type === 'textbox') {
-            obj.set('fill', chosenColor);
-        } else {
-            obj.set('stroke', chosenColor);
-        }
-        
-        if (window.isRecording && obj.id) {
-            window.logActionDirectlyToTimeline('object-modified', { targetId: obj.id, fill: obj.fill, stroke: obj.stroke });
-        }
+        if (obj.type === 'i-text' || obj.type === 'textbox') obj.set('fill', chosenColor);
+        else obj.set('stroke', chosenColor);
+        if (window.isRecording && obj.id) window.logActionDirectlyToTimeline('object-modified', { targetId: obj.id, fill: obj.fill, stroke: obj.stroke });
     });
     
-    canvas.renderAll();
-    saveHistoryState();
-    saveCurrentSlideState();
+    canvas.renderAll(); saveHistoryState(); saveCurrentSlideState();
 }
 
 document.querySelectorAll('#colorPalette .color-dot:not(.custom-color-picker)').forEach(dot => {
     dot.addEventListener('click', () => {
         document.querySelectorAll('#colorPalette .color-dot:not(.custom-color-picker)').forEach(d => d.classList.remove('active'));
-        dot.classList.add('active'); 
-        activeColor = dot.dataset.color; 
-        document.getElementById('nativeColorPicker').value = activeColor; 
-        updateBrush();
-        applyColorToSelection(activeColor); 
+        dot.classList.add('active'); activeColor = dot.dataset.color; document.getElementById('nativeColorPicker').value = activeColor; 
+        updateBrush(); applyColorToSelection(activeColor); 
     });
 });
 
 document.getElementById('nativeColorPicker').addEventListener('input', (e) => {
-    const chosenHexColor = e.target.value; 
-    const activeDot = document.querySelector('#colorPalette .color-dot.active');
-    if (activeDot) { 
-        activeDot.dataset.color = chosenHexColor; 
-        activeDot.style.background = chosenHexColor; 
-        activeColor = chosenHexColor; 
-        updateBrush(); 
-        applyColorToSelection(activeColor); 
-    }
+    const chosenHexColor = e.target.value; const activeDot = document.querySelector('#colorPalette .color-dot.active');
+    if (activeDot) { activeDot.dataset.color = chosenHexColor; activeDot.style.background = chosenHexColor; activeColor = chosenHexColor; updateBrush(); applyColorToSelection(activeColor); }
 });
 
 document.querySelectorAll('#brushThickness .thickness-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('#brushThickness .thickness-btn').forEach(d => d.classList.remove('active'));
-        btn.classList.add('active'); activeWidth = parseInt(btn.dataset.width, 10); updateBrush();
-    });
+    btn.addEventListener('click', () => { document.querySelectorAll('#brushThickness .thickness-btn').forEach(d => d.classList.remove('active')); btn.classList.add('active'); activeWidth = parseInt(btn.dataset.width, 10); updateBrush(); });
 });
 
 function evaluatePaletteSwap() {
@@ -222,28 +181,17 @@ canvas.on('selection:cleared', evaluatePaletteSwap);
 document.querySelectorAll('#textSizePalette .text-size-btn').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('#textSizePalette .text-size-btn').forEach(d => d.classList.remove('active'));
-        btn.classList.add('active'); 
-        window.activeFontSize = parseInt(btn.dataset.size, 10);
+        btn.classList.add('active'); window.activeFontSize = parseInt(btn.dataset.size, 10);
         
-        const activeObjects = canvas.getActiveObjects();
-        let modified = false;
-        
+        const activeObjects = canvas.getActiveObjects(); let modified = false;
         activeObjects.forEach(obj => {
             if (obj.type === 'i-text' || obj.type === 'textbox') {
-                obj.set('fontSize', window.activeFontSize);
-                modified = true;
-                
-                if (window.isRecording && obj.id) {
-                    window.logActionDirectlyToTimeline('object-modified', { targetId: obj.id, fontSize: window.activeFontSize });
-                }
+                obj.set('fontSize', window.activeFontSize); modified = true;
+                if (window.isRecording && obj.id) window.logActionDirectlyToTimeline('object-modified', { targetId: obj.id, fontSize: window.activeFontSize });
             }
         });
         
-        if (modified) {
-            canvas.renderAll();
-            saveHistoryState();
-            saveCurrentSlideState();
-        }
+        if (modified) { canvas.renderAll(); saveHistoryState(); saveCurrentSlideState(); }
     });
 });
 
@@ -253,15 +201,11 @@ document.querySelectorAll('.tb-btn[data-tool]').forEach(btn => {
         btn.classList.add('active'); activeTool = btn.dataset.tool; activeShapeType = null;
         
         if (['pen', 'highlight', 'pointer'].includes(activeTool)) {
-            canvas.isDrawingMode = true; 
-            canvas.selection = false; 
-            canvas.forEachObject(o => o.set('selectable', false)); 
-            updateBrush();
+            canvas.isDrawingMode = true; canvas.selection = false; 
+            canvas.forEachObject(o => o.set('selectable', false)); updateBrush();
         } else if (['eraser', 'text'].includes(activeTool)) {
-            canvas.isDrawingMode = false; 
-            canvas.selection = false; 
-            canvas.forEachObject(o => o.set('selectable', false)); 
-            updateCursor();
+            canvas.isDrawingMode = false; canvas.selection = false; 
+            canvas.forEachObject(o => o.set('selectable', false)); updateCursor();
         }
         
         if (window.isRecording) window.logActionDirectlyToTimeline('tool-switch', { tool: activeTool });
@@ -273,12 +217,9 @@ document.getElementById('btnQuickSelect').addEventListener('click', (e) => {
     document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
     e.currentTarget.classList.add('active');
     
-    activeTool = 'select'; 
-    activeShapeType = 'select';
-    canvas.isDrawingMode = false; 
-    canvas.selection = true;
-    canvas.forEachObject(o => o.set('selectable', true)); 
-    updateCursor();
+    activeTool = 'select'; activeShapeType = 'select';
+    canvas.isDrawingMode = false; canvas.selection = true;
+    canvas.forEachObject(o => o.set('selectable', true)); updateCursor();
     
     if (window.isRecording) window.logActionDirectlyToTimeline('tool-switch', { tool: 'select' });
     evaluatePaletteSwap();
@@ -288,12 +229,9 @@ document.getElementById('btnQuickLine').addEventListener('click', (e) => {
     document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
     e.currentTarget.classList.add('active');
     
-    activeTool = 'shape'; 
-    activeShapeType = 'line';
-    canvas.isDrawingMode = false; 
-    canvas.selection = false;
-    canvas.forEachObject(o => o.set('selectable', false)); 
-    updateCursor();
+    activeTool = 'shape'; activeShapeType = 'line';
+    canvas.isDrawingMode = false; canvas.selection = false;
+    canvas.forEachObject(o => o.set('selectable', false)); updateCursor();
     
     if (window.isRecording) window.logActionDirectlyToTimeline('tool-switch', { tool: 'line' });
     evaluatePaletteSwap();
@@ -329,39 +267,22 @@ canvas.on('path:created', (opt) => {
 
 function swipeEraseTarget(o) {
     const pointer = canvas.getPointer(o.e);
-
-    // 1. Try exact target hit first (optimizes for filled shapes and images)
     const exactTarget = canvas.findTarget(o.e, false);
     if (exactTarget) {
         if (window.isRecording && exactTarget.id) { window.logActionDirectlyToTimeline('erase-object', { targetId: exactTarget.id }); }
-        canvas.remove(exactTarget); 
-        canvas.renderAll(); 
-        return;
+        canvas.remove(exactTarget); canvas.renderAll(); return;
     }
 
-    // 2. Area-Based Collision Sweep (Radius = 13px to perfectly match the 26x26 SVG Cursor)
-    const eRadius = 13;
-    const eTL = new fabric.Point(pointer.x - eRadius, pointer.y - eRadius);
-    const eBR = new fabric.Point(pointer.x + eRadius, pointer.y + eRadius);
+    const eRadius = 13; const eTL = new fabric.Point(pointer.x - eRadius, pointer.y - eRadius); const eBR = new fabric.Point(pointer.x + eRadius, pointer.y + eRadius);
+    const objects = canvas.getObjects(); let erasedAnything = false;
 
-    const objects = canvas.getObjects();
-    let erasedAnything = false;
-
-    // Loop backwards to erase top-layered objects first
     for (let i = objects.length - 1; i >= 0; i--) {
         const obj = objects[i];
-        
-        // If any part of the object's boundaries touch our 26x26 invisible eraser square
         if (obj.intersectsWithRect(eTL, eBR) || obj.containsPoint(pointer)) {
-            if (window.isRecording && obj.id) { 
-                window.logActionDirectlyToTimeline('erase-object', { targetId: obj.id }); 
-            }
-            canvas.remove(obj);
-            erasedAnything = true;
+            if (window.isRecording && obj.id) { window.logActionDirectlyToTimeline('erase-object', { targetId: obj.id }); }
+            canvas.remove(obj); erasedAnything = true;
         }
     }
-    
-    // Batch the visual render once at the end to maintain high FPS during fast mouse swipes
     if (erasedAnything) canvas.renderAll(); 
 }
 
@@ -375,35 +296,21 @@ canvas.on('mouse:down', (o) => {
         
         const p = canvas.getPointer(o.e); 
         const textId = 'text_' + Date.now();
-        const roundedX = Math.round(p.x);
-        const roundedY = Math.round(p.y);
+        const roundedX = Math.round(p.x); const roundedY = Math.round(p.y);
         
         const textObj = new fabric.Textbox('', { 
-            left: roundedX, 
-            top: roundedY, 
-            width: 400, 
-            fill: activeColor, 
-            fontFamily: 'Segoe UI', 
-            fontSize: window.activeFontSize, 
-            id: textId, 
-            slideIndex: activeSlideIndex, 
-            selectable: true, 
-            hasControls: true 
+            left: roundedX, top: roundedY, width: 400, fill: activeColor, fontFamily: 'Segoe UI', fontSize: window.activeFontSize, 
+            id: textId, slideIndex: activeSlideIndex, selectable: true, hasControls: true 
         });
         
         if (window.isRecording) window.logActionDirectlyToTimeline('draw-start', { x: roundedX, y: roundedY, tool: 'text', color: activeColor, width: activeWidth, fontSize: window.activeFontSize, objectId: textId, slideIndex: activeSlideIndex });
         
-        canvas.add(textObj); 
-        canvas.setActiveObject(textObj); 
-        textObj.enterEditing(); 
+        canvas.add(textObj); canvas.setActiveObject(textObj); textObj.enterEditing(); 
         
         document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active')); 
         const selectBtn = document.getElementById('btnQuickSelect');
         if (selectBtn) selectBtn.classList.add('active');
-        activeTool = 'select';
-        
-        evaluatePaletteSwap(); 
-        canvas.renderAll(); saveHistoryState(); saveCurrentSlideState(); 
+        activeTool = 'select'; evaluatePaletteSwap(); canvas.renderAll(); saveHistoryState(); saveCurrentSlideState(); 
         return;
     }
 
@@ -411,8 +318,7 @@ canvas.on('mouse:down', (o) => {
     isUserDrawingCurrently = true; const p = canvas.getPointer(o.e);
     currentDrawingObjectId = (activeTool === 'shape') ? ('shape_' + Date.now()) : ('path_' + Date.now());
     
-    const rx = Math.round(p.x);
-    const ry = Math.round(p.y);
+    const rx = Math.round(p.x); const ry = Math.round(p.y);
     
     if (window.isRecording) window.logActionDirectlyToTimeline('draw-start', { x: rx, y: ry, tool: activeTool, color: activeColor, width: activeWidth, shapeType: activeShapeType, objectId: currentDrawingObjectId, slideIndex: activeSlideIndex });
 
@@ -434,7 +340,6 @@ canvas.on('mouse:move', (o) => {
     const p = canvas.getPointer(o.e); const now = Date.now();
     const rx = Math.round(p.x); const ry = Math.round(p.y);
 
-    // 40 FPS TELEMETRY LOGGING (25ms Throttle)
     if (window.isRecording && (now - window.lastCursorLogTime > 25)) { 
         window.jsonDrawingTimelineLog.push([now - window.recordStartTime, 'c', rx, ry]); 
         window.lastCursorLogTime = now; 
@@ -476,7 +381,10 @@ document.getElementById('canvasImageInsertLoader').addEventListener('change', fu
             const maxW = 1920 * 0.7; const maxH = 1080 * 0.7; 
             if (img.width > maxW || img.height > maxH) img.scale(Math.min(maxW / img.width, maxH / img.height));
             img.set({ id: 'image_' + Date.now(), slideIndex: activeSlideIndex, left: 960, top: 540, originX: 'center', originY: 'center', selectable: true, evented: true, hasControls: true, hasBorders: true });
-            canvas.isDrawingMode = false; document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active')); activeTool = 'select'; activeShapeType = 'select'; updateCursor();
+            canvas.isDrawingMode = false; document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active')); 
+            const selectBtn = document.getElementById('btnQuickSelect');
+            if(selectBtn) selectBtn.classList.add('active');
+            activeTool = 'select'; activeShapeType = 'select'; updateCursor();
             canvas.add(img); canvas.setActiveObject(img); canvas.renderAll(); saveHistoryState(); saveCurrentSlideState();
             if (window.isRecording) window.logActionDirectlyToTimeline('insert-image', { targetId: img.id });
         });
@@ -589,23 +497,108 @@ document.getElementById('btnNextPage').addEventListener('click', () => { if (act
 
 initDefaultWorkspace();
 
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-        const activeObjects = canvas.getActiveObjects();
-        if (activeObjects.length === 1 && activeObjects[0].isEditing) return;
+// --- CLIPBOARD ENGINE (Cross-Slide Copy/Paste) ---
+function copyToClipboard() {
+    if (activeTool !== 'select' && activeShapeType !== 'select') return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+        activeObject.clone(function(cloned) {
+            window.canvasClipboard = cloned;
+        }, ['slideIndex', 'id']); 
+    }
+}
 
+function cutToClipboard() {
+    if (activeTool !== 'select' && activeShapeType !== 'select') return;
+    const activeObject = canvas.getActiveObject();
+    if (activeObject) {
+        activeObject.clone(function(cloned) {
+            window.canvasClipboard = cloned;
+            
+            const activeObjects = canvas.getActiveObjects();
+            canvas.discardActiveObject();
+            activeObjects.forEach(function(object) {
+                if (window.isRecording && object.id) window.logActionDirectlyToTimeline('erase-object', { targetId: object.id });
+                canvas.remove(object);
+            });
+            canvas.renderAll(); saveHistoryState(); saveCurrentSlideState();
+        }, ['slideIndex', 'id']);
+    }
+}
+
+function pasteFromClipboard() {
+    if (!window.canvasClipboard) return;
+    
+    // Auto-switch to select tool upon pasting to make editing easier
+    document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+    const selectBtn = document.getElementById('btnQuickSelect');
+    if (selectBtn) selectBtn.classList.add('active');
+    activeTool = 'select'; activeShapeType = 'select';
+    canvas.isDrawingMode = false; canvas.selection = true;
+    canvas.forEachObject(o => o.set('selectable', true));
+    updateCursor(); evaluatePaletteSwap();
+
+    window.canvasClipboard.clone(function(clonedObj) {
+        canvas.discardActiveObject();
+        
+        // Offset the pasted object so it doesn't land perfectly on top of the original
+        clonedObj.set({
+            left: clonedObj.left + 30,
+            top: clonedObj.top + 30,
+            evented: true,
+        });
+        
+        // Bind pasted items to the CURRENT slide, allowing cross-slide movement
+        if (clonedObj.type === 'activeSelection') {
+            clonedObj.canvas = canvas;
+            clonedObj.forEachObject(function(obj) {
+                obj.set('id', 'pasted_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+                obj.set('slideIndex', activeSlideIndex);
+                canvas.add(obj);
+            });
+            clonedObj.setCoords();
+        } else {
+            clonedObj.set('id', 'pasted_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+            clonedObj.set('slideIndex', activeSlideIndex);
+            canvas.add(clonedObj);
+        }
+        
+        // Shift internal clipboard tracker slightly for subsequent consecutive pastes
+        window.canvasClipboard.top += 30;
+        window.canvasClipboard.left += 30;
+        
+        canvas.setActiveObject(clonedObj);
+        canvas.requestRenderAll();
+        saveHistoryState();
+        saveCurrentSlideState();
+    }, ['slideIndex', 'id']);
+}
+
+// --- GLOBAL KEYBOARD SHORTCUTS MANAGER ---
+window.addEventListener('keydown', (e) => {
+    const activeObjects = canvas.getActiveObjects();
+    const isEditingText = activeObjects.length === 1 && activeObjects[0].isEditing;
+    
+    // Protect standard browser text editing behavior
+    if (isEditingText) return; 
+
+    // Handle Delete/Backspace
+    if (e.key === 'Delete' || e.key === 'Backspace') {
         if (activeObjects.length > 0) {
             if (e.key === 'Backspace') e.preventDefault(); 
             activeObjects.forEach(obj => {
-                if (window.isRecording && obj.id) {
-                    window.logActionDirectlyToTimeline('erase-object', { targetId: obj.id });
-                }
+                if (window.isRecording && obj.id) window.logActionDirectlyToTimeline('erase-object', { targetId: obj.id });
                 canvas.remove(obj);
             });
-            canvas.discardActiveObject();
-            canvas.renderAll();
-            saveHistoryState();
-            saveCurrentSlideState();
+            canvas.discardActiveObject(); canvas.renderAll(); saveHistoryState(); saveCurrentSlideState();
         }
+    }
+
+    // Handle Copy/Cut/Paste across slides
+    if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'c') { e.preventDefault(); copyToClipboard(); }
+        else if (key === 'x') { e.preventDefault(); cutToClipboard(); }
+        else if (key === 'v') { e.preventDefault(); pasteFromClipboard(); }
     }
 });

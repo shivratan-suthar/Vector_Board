@@ -14,13 +14,24 @@
 </head>
 <body>
 
+   <div id="orientationOverlay" class="orientation-warning">
+        <div class="rotate-icon">📱</div>
+        <h2>Tip: Rotate Your Screen</h2>
+        <p>For the best drawing experience and wider canvas proportions, we recommend rotating your device horizontally.</p>
+        
+        <div style="margin-top: 25px;">
+            <button id="btnDismissOrientation" style="background: var(--brand-accent); color: white; border: none; padding: 12px 28px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(242, 109, 33, 0.4);">
+                Got It, Continue
+            </button>
+        </div>
+    </div>
+
    <header>
         <div class="header-left">
             <a href="index.html" target="_blank" class="hdr-btn">🏠 INDEX DASHBOARD</a>
             <div class="live-badge" id="btnLiveToggle">🔴 Start Recording</div>
         </div>
 
-        <!-- MOVED HERE: Directly in the middle -->
         <span id="classroomStateHeadingTitle">Educater's Board</span>
 
         <div class="header-right">
@@ -33,31 +44,31 @@
     <div class="app-body">
         <div class="central-workspace" id="workspaceContainer">
             <div class="floating-palette">
-    <div class="palette-group" id="colorPalette">
-        <div class="color-dot" style="background:#ff4b4b" data-color="#ff4b4b"></div>
-        <div class="color-dot" style="background:#ff9f3e" data-color="#ff9f3e"></div>
-        <div class="color-dot" style="background:#ffde37" data-color="#ffde37"></div>
-        <div class="color-dot" style="background:#3e8bff" data-color="#3e8bff"></div>
-        <div class="color-dot" style="background:#20d071" data-color="#20d071"></div>
-        <div class="color-dot active" style="background:#ffffff" data-color="#ffffff"></div>
-        
-        <div class="color-dot custom-color-picker" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); position: relative; overflow: hidden; margin-top: 4px; border: 1px solid #555;">
-            <input type="color" id="nativeColorPicker" value="#ffffff" style="opacity: 0; position: absolute; top: -10px; left: -10px; width: 40px; height: 40px; cursor: pointer;">
-        </div>
-    </div>
-    
-    <div class="palette-group" id="brushThickness">
-        <div class="thickness-btn" data-width="3"><span class="thickness-dot" style="width: 3px; height: 3px;"></span></div>
-        <div class="thickness-btn active" data-width="8"><span class="thickness-dot" style="width: 7px; height: 7px;"></span></div>
-        <div class="thickness-btn" data-width="16"><span class="thickness-dot" style="width: 13px; height: 13px;"></span></div>
-    </div>
+                <div class="palette-group" id="colorPalette">
+                    <div class="color-dot" style="background:#ff4b4b" data-color="#ff4b4b"></div>
+                    <div class="color-dot" style="background:#ff9f3e" data-color="#ff9f3e"></div>
+                    <div class="color-dot" style="background:#ffde37" data-color="#ffde37"></div>
+                    <div class="color-dot" style="background:#3e8bff" data-color="#3e8bff"></div>
+                    <div class="color-dot" style="background:#20d071" data-color="#20d071"></div>
+                    <div class="color-dot active" style="background:#ffffff" data-color="#ffffff"></div>
+                    
+                    <div class="color-dot custom-color-picker" style="background: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); position: relative; overflow: hidden; margin-top: 4px; border: 1px solid #555;">
+                        <input type="color" id="nativeColorPicker" value="#ffffff" style="opacity: 0; position: absolute; top: -10px; left: -10px; width: 40px; height: 40px; cursor: pointer;">
+                    </div>
+                </div>
+                
+                <div class="palette-group" id="brushThickness">
+                    <div class="thickness-btn" data-width="3"><span class="thickness-dot" style="width: 3px; height: 3px;"></span></div>
+                    <div class="thickness-btn active" data-width="8"><span class="thickness-dot" style="width: 7px; height: 7px;"></span></div>
+                    <div class="thickness-btn" data-width="16"><span class="thickness-dot" style="width: 13px; height: 13px;"></span></div>
+                </div>
 
-    <div class="palette-group" id="textSizePalette" style="display: none;">
-        <div class="text-size-btn" data-size="64">H1</div>
-        <div class="text-size-btn active" data-size="42">H2</div>
-        <div class="text-size-btn" data-size="24">H3</div>
-    </div>
-</div>
+                <div class="palette-group" id="textSizePalette" style="display: none;">
+                    <div class="text-size-btn" data-size="64">H1</div>
+                    <div class="text-size-btn active" data-size="42">H2</div>
+                    <div class="text-size-btn" data-size="24">H3</div>
+                </div>
+            </div>
 
             <input type="file" id="canvasImageInsertLoader" accept="image/*" style="display:none;">
 
@@ -84,19 +95,16 @@
 
             <div class="bottom-toolbar" id="studioCreationToolbarUI">
                 <div class="tb-group">
-    <button class="tb-btn" id="btnQuickSelect">🖱️<span>Select</span></button>
-    
-    <button class="tb-btn active" data-tool="pen">✏️<span>Pen</span></button>
-    <button class="tb-btn" data-tool="highlight">🖍️<span>Highlight</span></button>
-    <button class="tb-btn" data-tool="eraser">🧽<span>Eraser</span></button>
-    <button class="tb-btn" data-tool="text">🅰️<span>Text</span></button>
-    
-    <button class="tb-btn" id="btnQuickLine">📏<span>Line</span></button>
-    
-    <button class="tb-btn" data-tool="pointer">🎯<span>Laser</span></button>
-    <button class="tb-btn" id="btnInsertImage">🖼️<span>Image</span></button>
-    <button class="tb-btn" id="btnShapesTrigger">🔲<span>Objects</span></button>
-</div>
+                    <button class="tb-btn" id="btnQuickSelect">🖱️<span>Select</span></button>
+                    <button class="tb-btn active" data-tool="pen">✏️<span>Pen</span></button>
+                    <button class="tb-btn" data-tool="highlight">🖍️<span>Highlight</span></button>
+                    <button class="tb-btn" data-tool="eraser">🧽<span>Eraser</span></button>
+                    <button class="tb-btn" data-tool="text">🅰️<span>Text</span></button>
+                    <button class="tb-btn" id="btnQuickLine">📏<span>Line</span></button>
+                    <button class="tb-btn" data-tool="pointer">🎯<span>Laser</span></button>
+                    <button class="tb-btn" id="btnInsertImage">🖼️<span>Image</span></button>
+                    <button class="tb-btn" id="btnShapesTrigger">🔲<span>Objects</span></button>
+                </div>
                 <div class="tb-group pager-group">
                     <div class="page-arrow" id="btnPrevPage">❮</div>
                     <span id="pageIndicator">1 / 1</span>
@@ -111,6 +119,8 @@
 
         <div class="sidebar">
             <div class="cam-box">
+                <div id="camPlaceholderText" class="cam-placeholder">📷 Camera & Mic Standby<br><span>Click 'Toggle Cam' to allow access</span></div>
+                
                 <div class="hardware-error-notice hidden" id="camHardwareErrorNotice">Camera hardware access block listed or unauthorized. Recording blank template frames.</div>
                 <video id="webcamVideoFeed" autoplay muted playsinline></video>
                 <div class="mic-overlay-toggle" id="btnMute">🎙️ Mute</div>
