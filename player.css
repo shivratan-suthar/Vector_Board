@@ -11,8 +11,11 @@ body {
     background-color: var(--p-bg-main); 
     color: var(--p-text-main); 
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    height: 100vh; display: flex; flex-direction: column; 
+    height: 100vh; 
+    height: 100dvh;
+    display: flex; flex-direction: column; 
     overflow: hidden; user-select: none; 
+    -webkit-user-select: none;
 }
 
 .hidden { display: none !important; }
@@ -37,14 +40,14 @@ body {
 .card-desc { font-size: 13px; color: #999999; line-height: 1.6; }
 
 /* --- TOP RUNTIME HEADER --- */
-header { height: 50px; background: #ffffff; border-bottom: 1px solid var(--p-border); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 100; }
+header { height: 50px; background: #ffffff; border-bottom: 1px solid var(--p-border); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; z-index: 100; flex-shrink: 0; }
 .header-left { display: flex; align-items: center; gap: 15px; font-size: 14px; font-weight: 600; color: #111; }
 .hdr-btn { background: transparent; border: 1px solid #ccc; color: #333; padding: 5px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
 .hdr-btn:hover { background: #f3f4f6; border-color: #111; }
 
 /* --- MAIN WORKSPACE --- */
-.app-body { display: flex; flex: 1; height: calc(100vh - 50px); position: relative; }
-.central-workspace { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--p-bg-workspace); padding: 15px 30px 10px 30px; box-sizing: border-box; overflow: hidden; }
+.app-body { display: flex; flex: 1; height: calc(100vh - 50px); height: calc(100dvh - 50px); position: relative; min-height: 0; overflow: hidden; }
+.central-workspace { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--p-bg-workspace); padding: 15px 30px 10px 30px; box-sizing: border-box; overflow: hidden; min-height: 0; }
 
 .board-wrapper { 
     width: 100%; 
@@ -53,9 +56,9 @@ header { height: 50px; background: #ffffff; border-bottom: 1px solid var(--p-bor
     margin: 0 auto;
     display: flex; justify-content: center; align-items: center; 
     position: relative; 
+    touch-action: none;
 }
 
-/* 16:9 Canvas Container Box Alignment */
 .canvas-container { 
     box-shadow: 0 10px 40px rgba(0,0,0,0.8); 
     border: 1px solid #333; 
@@ -80,7 +83,17 @@ header { height: 50px; background: #ffffff; border-bottom: 1px solid var(--p-bor
 }
 
 /* --- SIDEBAR DECK TRACKER --- */
-.sidebar { width: 320px; background: #ffffff; border-left: 1px solid var(--p-border); display: flex; flex-direction: column; z-index: 80; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.sidebar { 
+    width: 320px; 
+    background: #ffffff; 
+    border-left: 1px solid var(--p-border); 
+    display: flex; 
+    flex-direction: column; 
+    z-index: 80; 
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+    min-height: 0;
+    height: 100%;
+}
 .sidebar.slide-mode-hidden { width: 0px !important; overflow: hidden !important; border-left: none !important; display: none !important; }
 
 /* Draggable Camera Layout Sheet Overlay */
@@ -98,9 +111,29 @@ header { height: 50px; background: #ffffff; border-bottom: 1px solid var(--p-bor
 }
 .cam-box video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 
-.file-manager { flex: 1; display: flex; flex-direction: column; padding: 15px; gap: 10px; overflow: hidden; }
-.fm-header { color: #4b5563; border-bottom: 1px solid var(--p-border); padding: 10px 0; font-size: 13px; font-weight: bold; display: flex; align-items: center; }
-.file-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 4px; width: 100%; box-sizing: border-box; }
+.file-manager { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    padding: 15px; 
+    gap: 10px; 
+    overflow: hidden; 
+    min-height: 0;
+}
+.fm-header { color: #4b5563; border-bottom: 1px solid var(--p-border); padding: 10px 0; font-size: 13px; font-weight: bold; display: flex; align-items: center; flex-shrink: 0; }
+.file-list { 
+    flex: 1; 
+    overflow-y: auto !important; 
+    -webkit-overflow-scrolling: touch; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 14px; 
+    padding: 4px; 
+    width: 100%; 
+    box-sizing: border-box; 
+    min-height: 0;
+    touch-action: pan-y;
+}
 
 .file-card { 
     width: 100%; background: #000000; border: 1px solid #e5e7eb; border-radius: 4px; 
@@ -177,7 +210,7 @@ body.sidebar-open .settings-popup-card { right: 350px; }
 .speed-check-icon { width: 20px; display: inline-block; font-weight: bold; }
 
 /* --- SIDEBAR FOOTER ACTION CONTROLS --- */
-.sidebar-playback-actionbar { width: 100%; border-top: 1px solid #e5e7eb; background: #ffffff; padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; }
+.sidebar-playback-actionbar { width: 100%; border-top: 1px solid #e5e7eb; background: #ffffff; padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; flex-shrink: 0; }
 .sidebar-action-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .sidebar-action-label { font-size: 12px; font-weight: 600; color: #374151; }
 .micro-stepper-widget { display: flex; align-items: center; gap: 12px; background: #f3f4f6; padding: 4px 10px; border-radius: 6px; border: 1px solid #e5e7eb; }
@@ -210,10 +243,14 @@ body.sidebar-open .settings-popup-card { right: 350px; }
 
 /* --- FULLSCREEN AUTOHIDE CONTROLLER --- */
 .central-workspace:fullscreen, .central-workspace:-webkit-full-screen {
-    padding: 0; 
+    padding: 0 !important; 
+    width: 100vw !important;
+    height: 100vh !important;
 }
 .central-workspace:fullscreen .board-wrapper, .central-workspace:-webkit-full-screen .board-wrapper {
-    height: 100vh; 
+    height: 100vh !important; 
+    width: 100vw !important;
+    aspect-ratio: auto !important;
 }
 .central-workspace:fullscreen .modern-playback-panel, .central-workspace:-webkit-full-screen .modern-playback-panel {
     position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box;
@@ -222,6 +259,10 @@ body.sidebar-open .settings-popup-card { right: 350px; }
     transform: translateY(100%); 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 999999;
+}
+.central-workspace:fullscreen .modern-playback-panel.force-panel-visible,
+.central-workspace:-webkit-full-screen .modern-playback-panel.force-panel-visible {
+    transform: translateY(0) !important;
 }
 .central-workspace:fullscreen .modern-playback-panel::before, .central-workspace:-webkit-full-screen .modern-playback-panel::before {
     content: ''; position: absolute; bottom: 100%; left: 0; width: 100%; height: 80px;
@@ -237,35 +278,43 @@ body.sidebar-open .settings-popup-card { right: 350px; }
 @media only screen and (max-width: 800px) {
     .app-body { 
         flex-direction: column !important; 
-        height: calc(100dvh - 50px);
+        height: calc(100dvh - 50px) !important;
+        overflow: hidden !important;
     }
 
+    /* Snug workspace container pinned under header */
     .central-workspace { 
+        padding: 6px 8px 4px 8px !important;
+        flex: 0 0 auto !important;
         height: auto !important;
-        flex: 0 0 auto !important; 
-        padding: 8px 10px 4px 10px !important;
-        justify-content: flex-start;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: flex-start !important;
     }
 
+    /* Fixed 16:9 ratio ensures no vertical black bars above or below canvas */
     .board-wrapper {
-        min-height: unset;
+        min-height: unset !important;
         flex: 0 0 auto !important;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        margin: 0 auto;
+        width: 100% !important;
+        aspect-ratio: 16 / 9 !important;
+        height: auto !important;
+        margin: 0 auto !important;
+    }
+
+    /* Pins control panel right beneath the video canvas */
+    .modern-playback-panel {
+        margin-top: 6px !important;
+        padding-top: 4px !important;
+        flex-shrink: 0 !important;
     }
 
     .cam-box {
-        width: 130px;
-        height: 75px;
-        top: 8px;
-        right: 8px;
-    }
-
-    .modern-playback-panel {
-        margin-top: 4px !important;
-        padding-top: 4px;
-        flex-shrink: 0;
+        width: 120px;
+        height: 70px;
+        top: 6px;
+        right: 6px;
     }
 
     .yt-controls-layout {
@@ -287,19 +336,35 @@ body.sidebar-open .settings-popup-card { right: 350px; }
     }
 
     .settings-popup-card {
-        bottom: 80px;
+        bottom: 70px;
         right: 10px;
         width: 220px;
     }
-    body.sidebar-open .settings-popup-card {
-        right: 10px;
-    }
 
-    .sidebar:not(.slide-mode-hidden) { 
+    /* Slides Deck container scrolling setup when Slide Mode is active */
+    .sidebar {
         width: 100% !important; 
         flex: 1 1 auto !important;
-        height: auto !important;
+        height: 100% !important;
+        max-height: calc(100dvh - 50px - (100vw * 9 / 16) - 60px) !important;
         border-left: none !important; 
         border-top: 1px solid var(--p-border);
+        overflow: hidden !important;
+    }
+
+    .sidebar .file-manager {
+        flex: 1 1 auto !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        min-height: 0 !important;
+        padding: 10px 12px;
+    }
+
+    .sidebar .file-list {
+        flex: 1 1 auto !important;
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch !important;
+        max-height: 100% !important;
+        min-height: 120px !important;
     }
 }

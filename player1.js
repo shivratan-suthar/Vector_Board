@@ -18,7 +18,7 @@ window.canvas = new fabric.Canvas('fabricCanvas', {
     isDrawingMode: false, 
     selection: false, 
     backgroundColor: '#1c1c1c',
-    enableRetinaScaling: false // Preserves uniform 1:1 virtual coordinate mapping across desktop and mobile
+    enableRetinaScaling: false
 });
 window.camVideoFeed = document.getElementById('webcamVideoFeed');
 window.playPauseBtn = document.getElementById('btnModernPlayPause');
@@ -40,7 +40,7 @@ window.syncCanvasDimensionsToWrapper = () => {
 
     window.canvas.setWidth(renderW);
     window.canvas.setHeight(renderH);
-    window.canvas.setZoom(renderW / 1920); // MASTER 1920 VIRTUAL LOCK
+    window.canvas.setZoom(renderW / 1920);
     window.canvas.calcOffset(); 
     
     if (window.globalSlidesDeck[window.activeSlideIndex]) {
@@ -49,8 +49,11 @@ window.syncCanvasDimensionsToWrapper = () => {
     window.canvas.renderAll(); 
 };
 window.addEventListener('resize', window.syncCanvasDimensionsToWrapper);
+window.addEventListener('orientationchange', () => {
+    setTimeout(window.syncCanvasDimensionsToWrapper, 200);
+});
 
-// Unified Pointer Drag Listener (supports Mouse, Touch, and Stylus on mobile and desktop)
+// Pointer drag logic with container boundary clamping
 let isDragging = false; 
 let startX, startY, initialLeft, initialTop;
 
@@ -63,21 +66,23 @@ dragBox.addEventListener('pointerdown', (e) => {
     initialTop = dragBox.offsetTop;
     dragBox.setPointerCapture(e.pointerId);
     e.preventDefault();
+    e.stopPropagation();
 });
 
 window.addEventListener('pointermove', (e) => {
     if (!isDragging || window.isSlideModeActive) return;
     let targetLeft = initialLeft + (e.clientX - startX); 
     let targetTop = initialTop + (e.clientY - startY);
+    
     const containerW = window.parentContainer.clientWidth; 
     const containerH = window.parentContainer.clientHeight;
     const elementW = dragBox.offsetWidth; 
     const elementH = dragBox.offsetHeight;
 
-    if (targetLeft < -(elementW / 2)) targetLeft = -(elementW / 2);
-    if (targetLeft > containerW - (elementW / 2)) targetLeft = containerW - (elementW / 2);
-    if (targetTop < -(elementH / 2)) targetTop = -(elementH / 2);
-    if (targetTop > containerH - (elementH / 2)) targetTop = containerH - (elementH / 2);
+    if (targetLeft < 0) targetLeft = 0;
+    if (targetLeft > containerW - elementW) targetLeft = containerW - elementW;
+    if (targetTop < 0) targetTop = 0;
+    if (targetTop > containerH - elementH) targetTop = containerH - elementH;
 
     dragBox.style.left = targetLeft + 'px'; 
     dragBox.style.top = targetTop + 'px'; 
@@ -96,6 +101,31 @@ window.addEventListener('pointercancel', (e) => {
         try { dragBox.releasePointerCapture(e.pointerId); } catch (_) {}
     }
     isDragging = false;
+});
+
+// Double-click/double-tap to toggle video controls visibility
+let lastTapTimestamp = 0;
+const workspaceEl = document.querySelector('.central-workspace');
+const playbackPanelUI = document.getElementById('studioPlaybackPlayerToolbarUI');
+
+workspaceEl.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('#studioPlaybackPlayerToolbarUI') || 
+        e.target.closest('#webcamContainerWrapperBox') || 
+        e.target.closest('#modernSettingsCardPopup')) {
+        return;
+    }
+
+    const currentTime = Date.now();
+    const timeDelta = currentTime - lastTapTimestamp;
+
+    if (timeDelta < 300 && timeDelta > 0) {
+        if (playbackPanelUI) {
+            playbackPanelUI.classList.toggle('force-panel-visible');
+        }
+        lastTapTimestamp = 0;
+    } else {
+        lastTapTimestamp = currentTime;
+    }
 });
 
 window.renderFlatSlideSorterUI = function() {
@@ -123,7 +153,7 @@ window.applySlideBackground = function(slide) {
     if (!slide) return;
     if (slide.sourceUrl) {
         fabric.Image.fromURL(slide.sourceUrl, img => { 
-            img.scaleToWidth(1920); // MASTER 1920 VIRTUAL LOCK
+            img.scaleToWidth(1920);
             window.canvas.setBackgroundImage(img, window.canvas.renderAll.bind(window.canvas)); 
         });
     } else { 
@@ -215,18 +245,36 @@ document.getElementById('btnToggleAnnotationsVectorVisibility').addEventListener
     window.renderFlatSlideSorterUI(); 
 });
 
-// Fullscreen Workspace Target
-document.getElementById('btnModernFullscreenToggle').addEventListener('click', () => {
+// Fullscreen Workspace Target with Landscape Lock
+document.getElementById('btnModernFullscreenToggle').addEventListener('click', async () => {
     const workspace = document.querySelector('.central-workspace');
     if (!document.fullscreenElement) { 
-        workspace.requestFullscreen().then(() => { 
-            setTimeout(window.syncCanvasDimensionsToWrapper, 100); 
-        }); 
+        try {
+            if (workspace.requestFullscreen) {
+                await workspace.requestFullscreen();
+            } else if (workspace.webkitRequestFullscreen) {
+                await workspace.webkitRequestFullscreen();
+            }
+
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {});
+            }
+        } catch (_) {}
+        setTimeout(window.syncCanvasDimensionsToWrapper, 150);
     } else { 
-        document.exitFullscreen(); 
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(() => {});
+        }
     }
 });
+
 document.addEventListener('fullscreenchange', () => { 
+    setTimeout(window.syncCanvasDimensionsToWrapper, 150); 
+});
+document.addEventListener('webkitfullscreenchange', () => { 
     setTimeout(window.syncCanvasDimensionsToWrapper, 150); 
 });
 
@@ -263,7 +311,7 @@ if (volSlider) {
     });
 }
 
-// --- PDF EXPORT ENGINE (OFF-SCREEN) ---
+// PDF Export
 document.getElementById('btnDownloadPdf').addEventListener('click', async function() {
     if (!window.globalSlidesDeck || window.globalSlidesDeck.length === 0) return;
     
@@ -322,7 +370,7 @@ document.getElementById('btnDownloadPdf').addEventListener('click', async functi
     }
 });
 
-// --- RETURN TO HOME HUB CONTROLLER ---
+// Return to Home Hub Controller
 function exitPlayerToHomeHub() {
     window.isPlayingArchive = false;
     
