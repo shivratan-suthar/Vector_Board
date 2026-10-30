@@ -49,28 +49,46 @@ window.changePlaybackSpeed = function(direction) {
     document.getElementById('lblSpeedValueDisplay').textContent = `${window.currentPlaybackRate === 1 ? 'Normal' : window.currentPlaybackRate + 'x'} >`;
     
     document.querySelectorAll('.speed-selection-item').forEach(i => {
-        i.classList.remove('selected'); i.querySelector('.speed-check-icon').textContent = "";
-        if (parseFloat(i.dataset.val) === window.currentPlaybackRate) { i.classList.add('selected'); i.querySelector('.speed-check-icon').textContent = "✓ "; }
+        i.classList.remove('selected'); 
+        i.querySelector('.speed-check-icon').textContent = "";
+        if (parseFloat(i.dataset.val) === window.currentPlaybackRate) { 
+            i.classList.add('selected'); 
+            i.querySelector('.speed-check-icon').textContent = "✓ "; 
+        }
     });
 };
 
 document.querySelectorAll('.speed-selection-item').forEach(item => {
-    item.addEventListener('click', () => { window.currentPlaybackRate = parseFloat(item.dataset.val); window.changePlaybackSpeed('exact'); document.getElementById('settingsPopupMainLayer').classList.remove('hidden'); document.getElementById('settingsPopupSpeedLayer').classList.add('hidden'); });
+    item.addEventListener('click', () => { 
+        window.currentPlaybackRate = parseFloat(item.dataset.val); 
+        window.changePlaybackSpeed('exact'); 
+        document.getElementById('settingsPopupMainLayer').classList.remove('hidden'); 
+        document.getElementById('settingsPopupSpeedLayer').classList.add('hidden'); 
+    });
 });
 
 window.addEventListener('keydown', (e) => {
     if (!window.isPlayingArchive || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     switch(e.code) {
-        case 'Space': e.preventDefault(); togglePlaybackEngineState(); break;
-        case 'ArrowLeft': e.preventDefault(); seekToTimeDelta(-10); break;
-        case 'ArrowRight': e.preventDefault(); seekToTimeDelta(10); break;
+        case 'Space': 
+            e.preventDefault(); 
+            togglePlaybackEngineState(); 
+            break;
+        case 'ArrowLeft': 
+            e.preventDefault(); 
+            seekToTimeDelta(-10); 
+            break;
+        case 'ArrowRight': 
+            e.preventDefault(); 
+            seekToTimeDelta(10); 
+            break;
         case 'KeyM': 
             e.preventDefault(); 
             window.camVideoFeed.muted = !window.camVideoFeed.muted; 
             const muteBtn = document.getElementById('btnModernMuteToggle');
-            if(muteBtn) muteBtn.textContent = window.camVideoFeed.muted || window.camVideoFeed.volume === 0 ? "🔇" : (window.camVideoFeed.volume > 0.5 ? "🔊" : "🔉"); 
+            if (muteBtn) muteBtn.textContent = window.camVideoFeed.muted || window.camVideoFeed.volume === 0 ? "🔇" : (window.camVideoFeed.volume > 0.5 ? "🔊" : "🔉"); 
             const volSlider = document.getElementById('playerVolumeSlider');
-            if(volSlider) volSlider.value = window.camVideoFeed.muted ? 0 : (window.camVideoFeed.volume || 1); 
+            if (volSlider) volSlider.value = window.camVideoFeed.muted ? 0 : (window.camVideoFeed.volume || 1); 
             break;
     }
     if (e.key === '>' || (e.shiftKey && e.key === '.')) { e.preventDefault(); window.changePlaybackSpeed('up'); }
@@ -79,7 +97,8 @@ window.addEventListener('keydown', (e) => {
 
 // --- ZIP EXTRACTION & HYDRATION ---
 document.getElementById('archiveFileLoader').addEventListener('change', async function(e) {
-    const file = e.target.files[0]; if (!file) return; 
+    const file = e.target.files[0]; 
+    if (!file) return; 
 
     const titleEl = document.querySelector('.home-title');
     const originalTitle = titleEl.textContent;
@@ -141,15 +160,27 @@ document.getElementById('archiveFileLoader').addEventListener('change', async fu
             } catch(err) {}
         });
 
-        window.isPlayingArchive = true; window.globalSlidesDeck = unpackedPayload.slides; 
+        window.isPlayingArchive = true; 
+        window.globalSlidesDeck = unpackedPayload.slides; 
         document.getElementById('homeViewContainer').classList.add('hidden'); 
-	dragBox.style.display = 'flex';
-window.isSlideModeActive = false; document.body.classList.remove('sidebar-open'); window.renderFlatSlideSorterUI();
+        dragBox.style.display = 'flex';
+        window.isSlideModeActive = false; 
+        document.body.classList.remove('sidebar-open'); 
+        window.renderFlatSlideSorterUI();
 
-        window.camVideoFeed.src = videoUrl; window.camVideoFeed.muted = false; 
+        window.camVideoFeed.src = videoUrl; 
+        window.camVideoFeed.muted = false; 
         window.camVideoFeed.onloadedmetadata = () => {
-            window.seekbar.max = window.camVideoFeed.duration; playbackEventPointerIndex = 0; window.currentPlaybackRate = 1.0; 
-            setTimeout(() => { window.syncCanvasDimensionsToWrapper(); window.reconstructCanvasStateToTimestamp(0); window.camVideoFeed.play(); window.playPauseBtn.textContent = "⏸"; window.executePlaybackSynchronizationLoop(); }, 100);
+            window.seekbar.max = window.camVideoFeed.duration; 
+            playbackEventPointerIndex = 0; 
+            window.currentPlaybackRate = 1.0; 
+            setTimeout(() => { 
+                window.syncCanvasDimensionsToWrapper(); 
+                window.reconstructCanvasStateToTimestamp(0); 
+                window.camVideoFeed.play(); 
+                window.playPauseBtn.textContent = "⏸"; 
+                window.executePlaybackSynchronizationLoop(); 
+            }, 100);
         };
     } catch (err) { 
         console.error(err);
@@ -161,11 +192,16 @@ window.isSlideModeActive = false; document.body.classList.remove('sidebar-open')
 });
 
 function findSlideStartPlaybackTick(slideIdx) {
-    let firstSwitchTick = null; let firstDrawTick = null;
+    let firstSwitchTick = null; 
+    let firstDrawTick = null;
     for (let i = 0; i < window.archivedTimeline.length; i++) {
         const ev = window.archivedTimeline[i];
-        if (ev.type === 'slide-switch' && ev.index === slideIdx) { if (firstSwitchTick === null) firstSwitchTick = ev.tick; }
-        if (ev.type === 'draw-start' && ev.slideIndex === slideIdx) { if (firstDrawTick === null) firstDrawTick = ev.tick; }
+        if (ev.type === 'slide-switch' && ev.index === slideIdx) { 
+            if (firstSwitchTick === null) firstSwitchTick = ev.tick; 
+        }
+        if (ev.type === 'draw-start' && ev.slideIndex === slideIdx) { 
+            if (firstDrawTick === null) firstDrawTick = ev.tick; 
+        }
     }
     if (firstSwitchTick !== null) return firstSwitchTick;
     if (firstDrawTick !== null) return firstDrawTick;
@@ -188,9 +224,13 @@ window.jumpToSlideIndex = function(index, e) {
 
     if (window.isSlideModeActive && !clickedPlayIcon) {
         window.applySlideBackground(window.globalSlidesDeck[window.activeSlideIndex]);
-        window.canvas.clear(); window.applySlideBackground(window.globalSlidesDeck[window.activeSlideIndex]);
+        window.canvas.clear(); 
+        window.applySlideBackground(window.globalSlidesDeck[window.activeSlideIndex]);
         if (window.areAnnotationsVisible && window.globalSlidesDeck[window.activeSlideIndex].annotation) {
-            window.canvas.loadFromJSON(window.globalSlidesDeck[window.activeSlideIndex].annotation, () => { window.canvas.forEachObject(obj => { obj.selectable = false; }); window.canvas.renderAll(); });
+            window.canvas.loadFromJSON(window.globalSlidesDeck[window.activeSlideIndex].annotation, () => { 
+                window.canvas.forEachObject(obj => { obj.selectable = false; }); 
+                window.canvas.renderAll(); 
+            });
         }
     } else {
         if (window.isSlideModeActive) {
@@ -211,12 +251,20 @@ window.jumpToSlideIndex = function(index, e) {
             window.executePlaybackSynchronizationLoop(); 
         }
     }
-}
+};
 
 function togglePlaybackEngineState() {
     if (!window.isPlayingArchive || window.isSlideModeActive) return;
-    if (window.camVideoFeed.paused) { window.camVideoFeed.play(); window.camVideoFeed.playbackRate = window.currentPlaybackRate; window.playPauseBtn.textContent = "⏸"; window.executePlaybackSynchronizationLoop(); }
-    else { window.camVideoFeed.pause(); window.playPauseBtn.textContent = "▶"; cancelAnimationFrame(playbackRenderAnimationFrameLoopId); }
+    if (window.camVideoFeed.paused) { 
+        window.camVideoFeed.play(); 
+        window.camVideoFeed.playbackRate = window.currentPlaybackRate; 
+        window.playPauseBtn.textContent = "⏸"; 
+        window.executePlaybackSynchronizationLoop(); 
+    } else { 
+        window.camVideoFeed.pause(); 
+        window.playPauseBtn.textContent = "▶"; 
+        cancelAnimationFrame(playbackRenderAnimationFrameLoopId); 
+    }
 }
 window.playPauseBtn.addEventListener('click', togglePlaybackEngineState);
 document.getElementById('btnRewindTenSeconds').addEventListener('click', () => seekToTimeDelta(-10));
@@ -224,31 +272,40 @@ document.getElementById('btnForwardTenSeconds').addEventListener('click', () => 
 
 function seekToTimeDelta(seconds) {
     let target = window.camVideoFeed.currentTime + seconds;
-    if (target < 0) target = 0; if (target > window.camVideoFeed.duration) target = window.camVideoFeed.duration;
-    window.seekbar.value = target; window.camVideoFeed.currentTime = target; window.camVideoFeed.playbackRate = window.currentPlaybackRate;
+    if (target < 0) target = 0; 
+    if (target > window.camVideoFeed.duration) target = window.camVideoFeed.duration;
+    window.seekbar.value = target; 
+    window.camVideoFeed.currentTime = target; 
+    window.camVideoFeed.playbackRate = window.currentPlaybackRate;
     window.reconstructCanvasStateToTimestamp(target * 1000);
 }
+
 window.seekbar.addEventListener('input', (e) => {
     if (!window.isPlayingArchive || window.isSlideModeActive) return;
-    window.camVideoFeed.currentTime = parseFloat(e.target.value); window.camVideoFeed.playbackRate = window.currentPlaybackRate; 
+    window.camVideoFeed.currentTime = parseFloat(e.target.value); 
+    window.camVideoFeed.playbackRate = window.currentPlaybackRate; 
     window.reconstructCanvasStateToTimestamp(parseFloat(e.target.value) * 1000);
 });
 
 function formatSecondsToTimerString(totalSecs) {
     if (isNaN(totalSecs)) return "00:00";
-    const h = Math.floor(totalSecs / 3600); const m = Math.floor((totalSecs % 3600) / 60); const s = Math.floor(totalSecs % 60);
-    const pad = v => String(v).padStart(2, '0'); return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+    const h = Math.floor(totalSecs / 3600); 
+    const m = Math.floor((totalSecs % 3600) / 60); 
+    const s = Math.floor(totalSecs % 60);
+    const pad = v => String(v).padStart(2, '0'); 
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
 // --- CENTRAL CURSOR STYLING ENGINE ---
-// Injects High-Contrast SVG elements directly into the DOM for perfect color rendering
 function updateCursorVisualState(x, y, tool, color) {
     const cursorEl = document.getElementById('playbackCursor');
     if (!cursorEl) return;
     
     const currentZoom = window.canvas.getZoom() || 1; 
     const fabricWrap = document.querySelector('.canvas-container');
-    if (fabricWrap && cursorEl.parentElement !== fabricWrap) { fabricWrap.appendChild(cursorEl); }
+    if (fabricWrap && cursorEl.parentElement !== fabricWrap) { 
+        fabricWrap.appendChild(cursorEl); 
+    }
     
     cursorEl.style.display = 'block'; 
     cursorEl.style.left = (x * currentZoom) + 'px'; 
@@ -296,7 +353,8 @@ function updateCursorVisualState(x, y, tool, color) {
 window.executePlaybackSynchronizationLoop = function() {
     if (!window.isPlayingArchive || window.camVideoFeed.paused || window.camVideoFeed.ended || window.isSlideModeActive) return;
 
-    const currentMediaTimeSeconds = window.camVideoFeed.currentTime; window.seekbar.value = currentMediaTimeSeconds;
+    const currentMediaTimeSeconds = window.camVideoFeed.currentTime; 
+    window.seekbar.value = currentMediaTimeSeconds;
     document.getElementById('modernPlayerTimeDisplayLabel').textContent = `${formatSecondsToTimerString(currentMediaTimeSeconds)} / ${formatSecondsToTimerString(window.camVideoFeed.duration)}`;
     const masterClockMS = currentMediaTimeSeconds * 1000; 
     const cursorEl = document.getElementById('playbackCursor');
@@ -327,7 +385,8 @@ window.executePlaybackSynchronizationLoop = function() {
                 canvasNeedsRender = true;
             }
 
-            playbackCurrentDrawingId = ev.objectId; strokeHomeSlideIndex = ev.slideIndex !== undefined ? ev.slideIndex : window.activeSlideIndex;
+            playbackCurrentDrawingId = ev.objectId; 
+            strokeHomeSlideIndex = ev.slideIndex !== undefined ? ev.slideIndex : window.activeSlideIndex;
 
             if (ev.tool === 'text') {
                 playbackActiveObject = new fabric.Textbox('', { 
@@ -358,7 +417,7 @@ window.executePlaybackSynchronizationLoop = function() {
                 const sOpacity = ev.tool === 'highlight' ? 0.5 : 1.0;
                 const sWidth = ev.tool === 'highlight' ? ev.width * 4 : ev.width;
                 
-                playbackActivePathProps = { stroke: sColor, strokeWidth: sWidth, fill: 'transparent', opacity: sOpacity, strokeLineCap: 'round', strokeLineJoin: 'round', selectable: false, id: ev.objectId, slideIndex: strokeHomeSlideIndex, objectCaching: false, visible: (strokeHomeSlideIndex === window.activeSlideIndex && window.areAnnotationsVisible) };
+                playbackActivePathProps = { stroke: sColor, strokeWidth: sWidth, fill: 'transparent', opacity: sOpacity, strokeLineCap: 'round', strokeLineJoin: 'round', selectable: false, id: ev.objectId, slideIndex: strokeHomeSlideIndex, objectCaching: false, originX: 'left', originY: 'top', visible: (strokeHomeSlideIndex === window.activeSlideIndex && window.areAnnotationsVisible) };
                 
                 playbackActiveObject = new fabric.Path(getSmoothPathFromPoints(playbackActivePoints), playbackActivePathProps);
                 window.canvas.add(playbackActiveObject); canvasNeedsRender = true;
@@ -468,21 +527,28 @@ window.executePlaybackSynchronizationLoop = function() {
     
     if (!window.camVideoFeed.ended) playbackRenderAnimationFrameLoopId = requestAnimationFrame(window.executePlaybackSynchronizationLoop);
     else { window.playPauseBtn.textContent = "🔄"; if (cursorEl) cursorEl.style.display = 'none'; }
-}
+};
 
 window.reconstructCanvasStateToTimestamp = function(targetClockMS) {
     window.canvasAsyncEpoch++; 
     const currentEpoch = window.canvasAsyncEpoch; 
 
-    window.canvas.clear(); playbackEventPointerIndex = 0; playbackActiveObject = null; playbackCurrentDrawingId = null;
+    window.canvas.clear(); 
+    playbackEventPointerIndex = 0; 
+    playbackActiveObject = null; 
+    playbackCurrentDrawingId = null;
     pendingImageTransforms = {}; 
 
     if (window.baseAnnotationsDeck && window.baseAnnotationsDeck.length > 0) {
         fabric.util.enlivenObjects(window.baseAnnotationsDeck, (enlivenedObjs) => {
             if (window.canvasAsyncEpoch !== currentEpoch) return;
 
+            const existingIds = new Set(window.canvas.getObjects().map(o => o.id).filter(Boolean));
+
             for (let i = enlivenedObjs.length - 1; i >= 0; i--) {
                 const bObj = enlivenedObjs[i];
+                if (bObj.id && existingIds.has(bObj.id)) continue; // Blocks duplicate ghosting on late async callback
+
                 bObj.selectable = false;
                 bObj.slideIndex = window.baseAnnotationsDeck[i].slideIndex;
                 bObj.visible = (bObj.slideIndex === window.activeSlideIndex && window.areAnnotationsVisible);
@@ -554,7 +620,7 @@ window.reconstructCanvasStateToTimestamp = function(targetClockMS) {
                 const sOpacity = ev.tool === 'highlight' ? 0.5 : 1.0;
                 const sWidth = ev.tool === 'highlight' ? ev.width * 4 : ev.width;
                 
-                playbackActivePathProps = { stroke: sColor, strokeWidth: sWidth, fill: 'transparent', opacity: sOpacity, strokeLineCap: 'round', strokeLineJoin: 'round', selectable: false, id: ev.objectId, slideIndex: strokeHomeSlideIndex, objectCaching: false };
+                playbackActivePathProps = { stroke: sColor, strokeWidth: sWidth, fill: 'transparent', opacity: sOpacity, strokeLineCap: 'round', strokeLineJoin: 'round', selectable: false, id: ev.objectId, slideIndex: strokeHomeSlideIndex, objectCaching: false, originX: 'left', originY: 'top' };
                 playbackActiveObject = new fabric.Path(getSmoothPathFromPoints(playbackActivePoints), playbackActivePathProps);
                 window.canvas.add(playbackActiveObject);
             }
@@ -669,4 +735,4 @@ window.reconstructCanvasStateToTimestamp = function(targetClockMS) {
     
     window.canvas.forEachObject(obj => { obj.visible = (obj.slideIndex === window.activeSlideIndex && window.areAnnotationsVisible); }); 
     window.canvas.renderAll();
-}
+};
