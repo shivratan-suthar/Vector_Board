@@ -1,6 +1,7 @@
 /**
  * PLAYER1.JS - Canvas & UI Layout Engine
- * Handles scaling, slide background loading, UI toggles, and PIP dragging.
+ * Handles scaling, slide background loading, UI toggles, PIP dragging,
+ * YouTube-style single-tap visibility, and landscape fullscreen locking.
  */
 
 window.globalSlidesDeck = [];
@@ -18,7 +19,7 @@ window.canvas = new fabric.Canvas('fabricCanvas', {
     isDrawingMode: false, 
     selection: false, 
     backgroundColor: '#1c1c1c',
-    enableRetinaScaling: false
+    enableRetinaScaling: false // Keeps 1:1 virtual coordinate mapping across mobile and desktop
 });
 window.camVideoFeed = document.getElementById('webcamVideoFeed');
 window.playPauseBtn = document.getElementById('btnModernPlayPause');
@@ -26,6 +27,11 @@ window.seekbar = document.getElementById('playerMasterTimelineSliderScrubber');
 window.settingsCard = document.getElementById('modernSettingsCardPopup');
 const dragBox = document.getElementById('webcamContainerWrapperBox');
 
+const workspaceEl = document.querySelector('.central-workspace');
+const playbackPanelUI = document.getElementById('studioPlaybackPlayerToolbarUI');
+let controlsHideTimer = null;
+
+// --- CANVAS DIMENSIONS & RESPONSIVE SCALING ---
 window.syncCanvasDimensionsToWrapper = () => {
     const targetRatio = 16 / 9; 
     const containerW = window.parentContainer.clientWidth || window.innerWidth;
@@ -35,8 +41,12 @@ window.syncCanvasDimensionsToWrapper = () => {
     let newWidth = (containerRatio > targetRatio) ? containerH * targetRatio : containerW;
     let newHeight = (containerRatio > targetRatio) ? containerH : containerW / targetRatio;
 
-    const renderW = Math.max(1, newWidth * 0.96);
-    const renderH = Math.max(1, newHeight * 0.96);
+    // Fill 100% of wrapper on mobile screens, keep 96% padding on desktop
+    const isMobile = window.innerWidth <= 800;
+    const scaleFactor = isMobile ? 1.0 : 0.96;
+
+    const renderW = Math.max(1, newWidth * scaleFactor);
+    const renderH = Math.max(1, newHeight * scaleFactor);
 
     window.canvas.setWidth(renderW);
     window.canvas.setHeight(renderH);
@@ -53,7 +63,40 @@ window.addEventListener('orientationchange', () => {
     setTimeout(window.syncCanvasDimensionsToWrapper, 200);
 });
 
-// Pointer drag logic with container boundary clamping
+// --- YOUTUBE-STYLE 1-TAP CONTROLS & AUTO-HIDE ---
+function showControlsTemporarily() {
+    if (!playbackPanelUI) return;
+    playbackPanelUI.classList.add('force-panel-visible');
+    
+    clearTimeout(controlsHideTimer);
+    controlsHideTimer = setTimeout(() => {
+        // Auto-hide only when in fullscreen
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            playbackPanelUI.classList.remove('force-panel-visible');
+        }
+    }, 3000);
+}
+
+workspaceEl.addEventListener('pointerup', (e) => {
+    // Avoid toggling when clicking controls, PIP camera box, or settings card
+    if (e.target.closest('#studioPlaybackPlayerToolbarUI') || 
+        e.target.closest('#webcamContainerWrapperBox') || 
+        e.target.closest('#modernSettingsCardPopup')) {
+        return;
+    }
+
+    if (!playbackPanelUI) return;
+
+    const isVisible = playbackPanelUI.classList.contains('force-panel-visible');
+    if (isVisible) {
+        clearTimeout(controlsHideTimer);
+        playbackPanelUI.classList.remove('force-panel-visible');
+    } else {
+        showControlsTemporarily();
+    }
+});
+
+// --- PIP CAMERA BOX POINTER DRAG ---
 let isDragging = false; 
 let startX, startY, initialLeft, initialTop;
 
@@ -100,34 +143,10 @@ window.addEventListener('pointercancel', (e) => {
     if (isDragging) {
         try { dragBox.releasePointerCapture(e.pointerId); } catch (_) {}
     }
-    isDragging = false;
+    isDragging = false; 
 });
 
-// Double-click/double-tap to toggle video controls visibility
-let lastTapTimestamp = 0;
-const workspaceEl = document.querySelector('.central-workspace');
-const playbackPanelUI = document.getElementById('studioPlaybackPlayerToolbarUI');
-
-workspaceEl.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('#studioPlaybackPlayerToolbarUI') || 
-        e.target.closest('#webcamContainerWrapperBox') || 
-        e.target.closest('#modernSettingsCardPopup')) {
-        return;
-    }
-
-    const currentTime = Date.now();
-    const timeDelta = currentTime - lastTapTimestamp;
-
-    if (timeDelta < 300 && timeDelta > 0) {
-        if (playbackPanelUI) {
-            playbackPanelUI.classList.toggle('force-panel-visible');
-        }
-        lastTapTimestamp = 0;
-    } else {
-        lastTapTimestamp = currentTime;
-    }
-});
-
+// --- SLIDE SORTER UI & BACKGROUNDS ---
 window.renderFlatSlideSorterUI = function() {
     const container = document.getElementById('fileRegistryContainer'); 
     container.innerHTML = '';
@@ -161,6 +180,7 @@ window.applySlideBackground = function(slide) {
     }
 };
 
+// --- SETTINGS POPUP MENU ---
 document.getElementById('btnModernSettingsTrigger').addEventListener('click', e => { 
     e.stopPropagation(); 
     window.settingsCard.classList.toggle('open'); 
@@ -183,14 +203,16 @@ document.getElementById('btnBackToMainSettingsMenu').addEventListener('click', (
     document.getElementById('settingsPopupSpeedLayer').classList.add('hidden');
 });
 
+// --- SLIDE MODE TOGGLE ---
 window.toggleSlideMode = function(forceState) {
     window.isSlideModeActive = (forceState !== undefined) ? forceState : !window.isSlideModeActive;
     const sidebar = document.getElementById('appWorkspaceSidebarColumnPanel');
     const sideBackBtn = document.getElementById('btnExitSlideModeArrow');
     
     if (window.isSlideModeActive) {
-        if (document.fullscreenElement) {
-            document.exitFullscreen().catch(err => console.error("Could not exit fullscreen:", err));
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+            if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
         }
 
         window.camVideoFeed.pause(); 
@@ -245,38 +267,60 @@ document.getElementById('btnToggleAnnotationsVectorVisibility').addEventListener
     window.renderFlatSlideSorterUI(); 
 });
 
-// Fullscreen Workspace Target with Landscape Lock
-document.getElementById('btnModernFullscreenToggle').addEventListener('click', async () => {
-    const workspace = document.querySelector('.central-workspace');
-    if (!document.fullscreenElement) { 
+// --- YOUTUBE-STYLE FULLSCREEN & ORIENTATION LOCK ---
+document.getElementById('btnModernFullscreenToggle').addEventListener('click', async (e) => {
+    e.stopPropagation();
+
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+
+    if (!isFullscreen) { 
         try {
-            if (workspace.requestFullscreen) {
-                await workspace.requestFullscreen();
-            } else if (workspace.webkitRequestFullscreen) {
-                await workspace.webkitRequestFullscreen();
+            if (workspaceEl.requestFullscreen) {
+                await workspaceEl.requestFullscreen();
+            } else if (workspaceEl.webkitRequestFullscreen) {
+                await workspaceEl.webkitRequestFullscreen();
             }
 
+            // Lock screen orientation to landscape on mobile
             if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(() => {});
+                await screen.orientation.lock('landscape').catch(() => {});
             }
-        } catch (_) {}
+        } catch (err) {
+            console.warn("Fullscreen/Orientation lock unavailable:", err);
+        }
+
+        showControlsTemporarily();
         setTimeout(window.syncCanvasDimensionsToWrapper, 150);
     } else { 
-        if (screen.orientation && screen.orientation.unlock) {
-            screen.orientation.unlock();
-        }
-        if (document.exitFullscreen) {
-            document.exitFullscreen().catch(() => {});
-        }
+        try {
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+            if (document.exitFullscreen) {
+                await document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                await document.webkitExitFullscreen();
+            }
+        } catch (_) {}
     }
 });
 
-document.addEventListener('fullscreenchange', () => { 
-    setTimeout(window.syncCanvasDimensionsToWrapper, 150); 
-});
-document.addEventListener('webkitfullscreenchange', () => { 
-    setTimeout(window.syncCanvasDimensionsToWrapper, 150); 
-});
+function handleFullscreenTransition() {
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (!isFullscreen) {
+        clearTimeout(controlsHideTimer);
+        if (playbackPanelUI) playbackPanelUI.classList.remove('force-panel-visible');
+        if (screen.orientation && screen.orientation.unlock) {
+            try { screen.orientation.unlock(); } catch (_) {}
+        }
+    } else {
+        showControlsTemporarily();
+    }
+    setTimeout(window.syncCanvasDimensionsToWrapper, 150);
+}
+
+document.addEventListener('fullscreenchange', handleFullscreenTransition);
+document.addEventListener('webkitfullscreenchange', handleFullscreenTransition);
 
 document.getElementById('btnStepperPrevPage').addEventListener('click', () => { 
     if (window.activeSlideIndex > 0) window.jumpToSlideIndex(window.activeSlideIndex - 1); 
@@ -285,7 +329,7 @@ document.getElementById('btnStepperNextPage').addEventListener('click', () => {
     if (window.activeSlideIndex < window.globalSlidesDeck.length - 1) window.jumpToSlideIndex(window.activeSlideIndex + 1); 
 });
 
-// Volume & Mute Linkage Logic
+// --- VOLUME & MUTE LINKAGE LOGIC ---
 const muteBtn = document.getElementById('btnModernMuteToggle');
 const volSlider = document.getElementById('playerVolumeSlider');
 
@@ -311,7 +355,7 @@ if (volSlider) {
     });
 }
 
-// PDF Export
+// --- PDF EXPORT ENGINE (OFF-SCREEN) ---
 document.getElementById('btnDownloadPdf').addEventListener('click', async function() {
     if (!window.globalSlidesDeck || window.globalSlidesDeck.length === 0) return;
     
@@ -370,7 +414,7 @@ document.getElementById('btnDownloadPdf').addEventListener('click', async functi
     }
 });
 
-// Return to Home Hub Controller
+// --- RETURN TO HOME HUB CONTROLLER ---
 function exitPlayerToHomeHub() {
     window.isPlayingArchive = false;
     
@@ -383,8 +427,12 @@ function exitPlayerToHomeHub() {
         cancelAnimationFrame(playbackRenderAnimationFrameLoopId);
     }
     
-    if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (screen.orientation && screen.orientation.unlock) {
+            try { screen.orientation.unlock(); } catch (_) {}
+        }
+        if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
     }
     
     if (window.canvas) {

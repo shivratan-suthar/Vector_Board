@@ -241,36 +241,62 @@ body.sidebar-open .settings-popup-card { right: 350px; }
     background: rgba(255, 255, 255, 0.15); color: #ffffff;
 }
 
-/* --- FULLSCREEN AUTOHIDE CONTROLLER --- */
-.central-workspace:fullscreen, .central-workspace:-webkit-full-screen {
+/* --- FULLSCREEN YOUTUBE-STYLE AUTOHIDE CONTROLLER --- */
+.central-workspace:fullscreen, 
+.central-workspace:-webkit-full-screen {
     padding: 0 !important; 
     width: 100vw !important;
     height: 100vh !important;
+    background: #000000 !important;
 }
-.central-workspace:fullscreen .board-wrapper, .central-workspace:-webkit-full-screen .board-wrapper {
+
+.central-workspace:fullscreen .board-wrapper, 
+.central-workspace:-webkit-full-screen .board-wrapper {
     height: 100vh !important; 
     width: 100vw !important;
     aspect-ratio: auto !important;
+    cursor: pointer;
 }
-.central-workspace:fullscreen .modern-playback-panel, .central-workspace:-webkit-full-screen .modern-playback-panel {
-    position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box;
-    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 60%, transparent 100%);
-    padding: 40px 20px 15px 20px; 
+
+.central-workspace:fullscreen .modern-playback-panel, 
+.central-workspace:-webkit-full-screen .modern-playback-panel {
+    position: absolute; 
+    bottom: 0; 
+    left: 0; 
+    width: 100%; 
+    box-sizing: border-box;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+    padding: 30px 20px 15px 20px; 
     transform: translateY(100%); 
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s ease-out, opacity 0.25s ease-out;
     z-index: 999999;
 }
+
 .central-workspace:fullscreen .modern-playback-panel.force-panel-visible,
 .central-workspace:-webkit-full-screen .modern-playback-panel.force-panel-visible {
     transform: translateY(0) !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
-.central-workspace:fullscreen .modern-playback-panel::before, .central-workspace:-webkit-full-screen .modern-playback-panel::before {
+
+.central-workspace:fullscreen .modern-playback-panel::before, 
+.central-workspace:-webkit-full-screen .modern-playback-panel::before {
     content: ''; position: absolute; bottom: 100%; left: 0; width: 100%; height: 80px;
 }
-.central-workspace:fullscreen .modern-playback-panel:hover, .central-workspace:-webkit-full-screen .modern-playback-panel:hover {
-    transform: translateY(0);
+
+@media (hover: hover) and (pointer: fine) {
+    .central-workspace:fullscreen .modern-playback-panel:hover, 
+    .central-workspace:-webkit-full-screen .modern-playback-panel:hover {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
-.central-workspace:fullscreen .settings-popup-card, .central-workspace:-webkit-full-screen .settings-popup-card {
+
+.central-workspace:fullscreen .settings-popup-card, 
+.central-workspace:-webkit-full-screen .settings-popup-card {
     bottom: 100%; margin-bottom: 10px;
 }
 
@@ -282,7 +308,7 @@ body.sidebar-open .settings-popup-card { right: 350px; }
         overflow: hidden !important;
     }
 
-    /* Snug workspace container pinned under header */
+    /* Keep the workspace snug to the video without stretching vertically */
     .central-workspace { 
         padding: 6px 8px 4px 8px !important;
         flex: 0 0 auto !important;
@@ -293,7 +319,7 @@ body.sidebar-open .settings-popup-card { right: 350px; }
         justify-content: flex-start !important;
     }
 
-    /* Fixed 16:9 ratio ensures no vertical black bars above or below canvas */
+    /* Fixed 16:9 ratio ensures no black vertical padding bars on phones */
     .board-wrapper {
         min-height: unset !important;
         flex: 0 0 auto !important;
@@ -303,7 +329,7 @@ body.sidebar-open .settings-popup-card { right: 350px; }
         margin: 0 auto !important;
     }
 
-    /* Pins control panel right beneath the video canvas */
+    /* Places control toolbar directly below the video canvas */
     .modern-playback-panel {
         margin-top: 6px !important;
         padding-top: 4px !important;
@@ -341,7 +367,7 @@ body.sidebar-open .settings-popup-card { right: 350px; }
         width: 220px;
     }
 
-    /* Slides Deck container scrolling setup when Slide Mode is active */
+    /* Sidebar slide-deck scrolling when Slide Mode is enabled */
     .sidebar {
         width: 100% !important; 
         flex: 1 1 auto !important;
